@@ -10,12 +10,11 @@ public class BestEverService {
 
     public Integer getBestNumber() {
         var someId = idGenerator.generate();
-        var email = contactService.getEmail();
-        return generateHashNumber(someId, email);
+        return generateHashNumber(someId);
     }
 
-    private int generateHashNumber(String someId, String email) {
-        return (someId + "_" + email).hashCode();
+    private int generateHashNumber(String someId) {
+        return (someId + "_" + contactService.getEmail()).hashCode();
     }
 
     public void justDoIt() {
