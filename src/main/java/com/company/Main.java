@@ -12,9 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 public class Main {
+
 
     public static void main(String[] args) throws Exception {
         var testeeClass = BestEverService.class;
@@ -29,10 +31,10 @@ public class Main {
     }
 
     private static JDefinedClass generateTestClass(Class<?> testeeClass, JCodeModel cm) throws JClassAlreadyExistsException {
-        var cls = cm._class(JMod.NONE, testeeClass.getSimpleName() + "Test", ClassType.CLASS);
+        var jp = cm._package(testeeClass.getPackage().getName());
+        var cls = jp._class(JMod.NONE,testeeClass.getSimpleName() + "Test");
         var extendsWithAnnotation = cls.annotate(ExtendWith.class);
         extendsWithAnnotation.param("value", cm.ref(MockitoExtension.class));
-        cls._package("");
         return cls;
     }
 
@@ -43,6 +45,7 @@ public class Main {
                     var methodName = method.getName();
                     var testMethod = cls.method(JMod.NONE, cm.VOID, "should" + StringUtils.capitalize(methodName));
                     testMethod.annotate(cm.ref(Test.class));
+                    testMethod._throws(Exception.class);
                 });
     }
 
