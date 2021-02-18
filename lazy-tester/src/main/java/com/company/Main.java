@@ -28,7 +28,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         var classPath = CodeGenerationUtils
                 .mavenModuleRoot(BestEverService.class)
-                .resolve("lazy-tester/src/main/java/com/company/demo");
+                .resolve("src/main/java/com/company/demo");
         var compilationUnit = new SourceRoot(classPath).parse("", "BestEverService.java");
         compilationUnit.addImport(BlockComment.class);
         compilationUnit.accept(new VoidVisitorAdapter<>() {
