@@ -2,16 +2,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>lazy-tester-parent</artifactId>
+        <groupId>com.lazytester</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.lazytester</groupId>
-    <artifactId>lazy-tester-parent</artifactId>
-    <packaging>pom</packaging>
-    <version>0.0.1-SNAPSHOT</version>
-    <modules>
-        <module>lazy-tester-functional-tests</module>
-        <module>lazy-tester</module>
-    </modules>
+    <artifactId>lazy-tester-functional-tests</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
