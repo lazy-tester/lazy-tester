@@ -5,16 +5,22 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BestEverService {
 
-    private final IdGenerator idGenerator;
+    private final IdValidator idValidator;
     private final ContactService contactService;
 
     public Integer getBestNumber() {
-        var someId = idGenerator.generate();
-        return generateHashNumber(someId);
+        var email = contactService.getEmail();
+        var number = generateHashNumber(email);
+        validate(number);
+        return number;
     }
 
-    private int generateHashNumber(String someId) {
-        return (someId + "_" + contactService.getEmail()).hashCode();
+    private void validate(int number) {
+        idValidator.validate(number);
+    }
+
+    private int generateHashNumber(String email) {
+        return ("someToken_" + email).hashCode();
     }
 
     public void justDoIt() {
