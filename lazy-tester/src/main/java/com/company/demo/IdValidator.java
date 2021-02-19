@@ -6,4 +6,7 @@ public class IdValidator {
         System.out.println("valid");
     }
 
+    public int beautify(int number) {
+        return number;
+    }
 }

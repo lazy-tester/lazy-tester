@@ -12,7 +12,7 @@ public class BestEverService {
         var email = contactService.getEmail();
         var number = generateHashNumber(email);
         validate(number);
-        return number;
+        return idValidator.beautify(number);
     }
 
     private void validate(int number) {
