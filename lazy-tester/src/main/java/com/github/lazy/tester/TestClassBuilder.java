@@ -1,8 +1,9 @@
 package com.github.lazy.tester;
 
-import com.github.lazy.tester.model.MockCall;
+import com.github.lazy.tester.model.TestMethod;
 import com.sun.codemodel.*;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,15 +13,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.util.List;
 
 public class TestClassBuilder {
     private final JCodeModel codeModel;
     private final JDefinedClass definedClass;
 
-    public TestClassBuilder(String name, String packageName) {
+    private JFieldVar testee;
+
+    public TestClassBuilder(Class<?> testeeClass) {
         codeModel = new JCodeModel();
-        definedClass = buildDefinedClass(name, packageName);
+        definedClass = buildDefinedClass(testeeClass.getSimpleName(), testeeClass.getPackageName());
     }
 
     public void addMockField(Class<?> mockClass, String fieldName) {
@@ -28,22 +30,31 @@ public class TestClassBuilder {
         mock.annotate(Mock.class);
     }
 
-    public void addTestMethod(String name, List<MockCall> statements) {
-        var testMethod = definedClass.method(JMod.NONE, codeModel.VOID, name);
-        testMethod.annotate(codeModel.ref(Test.class));
-        testMethod._throws(Exception.class);
-        var body = testMethod.body();
+    public void addTestMethod(TestMethod testMethod) {
+        var name = "should" + StringUtils.capitalize(testMethod.getName());
+        var method = definedClass.method(JMod.NONE, codeModel.VOID, name);
+        method.annotate(codeModel.ref(Test.class));
+        method._throws(Exception.class);
+        var body = method.body();
 
-        statements.forEach(mockCall -> {
+
+        var methodCalls = testMethod.getMethodCalls();
+        if (!methodCalls.isEmpty()) {
+            body.directStatement("//when");
+        }
+        methodCalls.forEach(mockCall -> {
             var arg = codeModel.ref(Mockito.class)
                     .staticInvoke("mock").arg(JExpr.ref(mockCall.getMockName()).invoke(mockCall.getMethod()))
                     .invoke("thenReturn").arg("some value to return");
             body.add(arg);
         });
+
+        body.directStatement("//then");
+        body.add(testee.invoke(testMethod.getName()));
     }
 
-    public void addTesteeField(Class<?> testeeClass, String testeeFieldName) {
-        var testee = definedClass.field(JMod.NONE, testeeClass, testeeFieldName);
+    public void addTesteeField(Class<?> testeeClass) {
+        testee = definedClass.field(JMod.NONE, testeeClass, StringUtils.uncapitalize(testeeClass.getSimpleName()));
         testee.annotate(InjectMocks.class);
     }
 
@@ -54,7 +65,7 @@ public class TestClassBuilder {
     @SneakyThrows
     private JDefinedClass buildDefinedClass(String name, String packageName) {
         var jp = codeModel._package(packageName);
-        var cls = jp._class(JMod.NONE, name);
+        var cls = jp._class(JMod.NONE, StringUtils.capitalize(name) + "Test");
         var extendsWithAnnotation = cls.annotate(ExtendWith.class);
         extendsWithAnnotation.param("value", codeModel.ref(MockitoExtension.class));
         return cls;

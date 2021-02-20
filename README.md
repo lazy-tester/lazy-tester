@@ -1,6 +1,6 @@
-# lazy-tester
+# lazy-tester - Simple tool to generate unit tests skeleton
 
-Latest result:
+Example of test generation:
 
 ```
 package com.github.lazy.tester.demo;
@@ -26,14 +26,19 @@ class BestEverServiceTest {
     void shouldJustDoIt()
         throws Exception
     {
+        //then
+        bestEverService.justDoIt();
     }
 
     @Test
     void shouldGetBestNumber()
         throws Exception
     {
+        //when
         Mockito.mock(contactService.getEmail()).thenReturn("some value to return");
         Mockito.mock(idValidator.beautify()).thenReturn("some value to return");
+        //then
+        bestEverService.getBestNumber();
     }
 
 }

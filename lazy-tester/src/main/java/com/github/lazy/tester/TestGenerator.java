@@ -1,6 +1,5 @@
 package com.github.lazy.tester;
 
-import com.github.lazy.tester.model.MockCall;
 import com.github.lazy.tester.model.TestMethod;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -16,7 +15,7 @@ public class TestGenerator {
     private TestGenerator(Class<?> testeeClass) {
         this.testeeClass = testeeClass;
         classParser = new ClassParser(testeeClass);
-        this.testClassBuilder = new TestClassBuilder(testeeClass.getSimpleName() + "Test", testeeClass.getPackage().getName());
+        this.testClassBuilder = new TestClassBuilder(testeeClass);
     }
 
     public static String generate(Class<?> testeeClass) {
@@ -33,21 +32,24 @@ public class TestGenerator {
 
     private void generateTestMethods() {
         classParser.getDeclaredPublicMethods().stream()
-                .map(classParser::convertToTestMethod)
+                .map(this::generateMethod)
                 .forEach(this::generateTestMethod);
     }
 
-    private void generateTestMethod(TestMethod method) {
-        var mockCalls = method.getMockCalls();
-        testClassBuilder.addTestMethod("should" + StringUtils.capitalize(method.getName()), mockCalls);
+    public TestMethod generateMethod(String methodName) {
+        var mockCalls = classParser.getMockCalls(methodName);
+        return TestMethod.builder()
+                .methodCalls(mockCalls)
+                .name(methodName)
+                .build();
     }
 
-    private String convertToPlainStatement(MockCall mockCall) {
-        return mockCall.getMockName() + "." + mockCall.getMethod() + "()";
+    private void generateTestMethod(TestMethod method) {
+        testClassBuilder.addTestMethod(method);
     }
 
     private void generateTesteeField() {
-        testClassBuilder.addTesteeField(testeeClass, StringUtils.uncapitalize(testeeClass.getSimpleName()));
+        testClassBuilder.addTesteeField(testeeClass);
     }
 
     private void generateMockFields() {

@@ -1,7 +1,5 @@
 package com.github.lazy.tester;
 
-import com.github.lazy.tester.model.MockCall;
-import com.github.lazy.tester.model.TestMethod;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -10,6 +8,7 @@ import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPublicModifier;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.utils.CodeGenerationUtils;
 import com.github.javaparser.utils.SourceRoot;
+import com.github.lazy.tester.model.MethodCall;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,20 +33,21 @@ public class ClassParser {
         return new SourceRoot(classPath).parse("", clazz.getSimpleName() + ".java");
     }
 
-    public TestMethod convertToTestMethod(String methodName) {
-        var mockCalls = getAllMethodCallExpressions(methodName).stream()
+    public List<MethodCall> getMockCalls(String methodName) {
+        return getAllMethodCallExpressions(methodName).stream()
                 .filter(methodCallExpr -> methodCallExpr.getScope().isPresent())
                 .filter(this::isCallerDeclaredField)
                 .map(this::convertToMockCall)
                 .collect(toList());
-
-        return new TestMethod(methodName, mockCalls);
     }
 
-    private MockCall convertToMockCall(MethodCallExpr methodCallExpr) {
+    private MethodCall convertToMockCall(MethodCallExpr methodCallExpr) {
         var callerName = methodCallExpr.getScope().get().asNameExpr().getName().getId();
         var methodName = methodCallExpr.getName().getId();
-        return new MockCall(callerName, methodName);
+        return MethodCall.builder()
+                .mockName(callerName)
+                .method(methodName)
+                .build();
     }
 
     private boolean isCallerDeclaredField(MethodCallExpr methodCallExpr) {

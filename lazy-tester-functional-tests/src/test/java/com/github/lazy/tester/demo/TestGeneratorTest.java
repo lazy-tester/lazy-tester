@@ -29,14 +29,13 @@ class TestGeneratorTest {
 
     @SneakyThrows
     public String readFile(String fileName) {
-        Path path = getResourcePath(fileName);
+        var path = getResourcePath(fileName);
         return new String(Files.readAllBytes(path));
     }
 
     private Path getResourcePath(String fileName) throws URISyntaxException {
         var resource = TestGeneratorTest.class.getClassLoader().getResource(fileName);
-        var path = Paths.get(resource.toURI());
-        return path;
+        return Paths.get(resource.toURI());
     }
 
 }
