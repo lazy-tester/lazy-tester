@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -35,10 +36,19 @@ public class ClassParser {
 
     public List<MethodCall> getMockCalls(String methodName) {
         return getAllMethodCallExpressions(methodName).stream()
-                .filter(methodCallExpr -> methodCallExpr.getScope().isPresent())
+                .flatMap(this::getNestedMethodCalls)
                 .filter(this::isCallerDeclaredField)
                 .map(this::convertToMockCall)
                 .collect(toList());
+    }
+
+    private Stream<MethodCallExpr> getNestedMethodCalls(MethodCallExpr methodCallExpr) {
+        if (methodCallExpr.getScope().isPresent()) {
+            return Stream.of(methodCallExpr);
+        }
+        return getAllMethodCallExpressions(methodCallExpr.getName().getId()).stream()
+                .filter(nestedMethod -> nestedMethod.getScope().isPresent())
+                .flatMap(this::getNestedMethodCalls);
     }
 
     private MethodCall convertToMockCall(MethodCallExpr methodCallExpr) {
