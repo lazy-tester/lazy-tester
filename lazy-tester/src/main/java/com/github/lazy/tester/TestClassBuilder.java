@@ -1,7 +1,9 @@
-package com.company;
+package com.github.lazy.tester;
 
+import com.github.lazy.tester.model.MockCall;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
+import com.sun.codemodel.JExpr;
 import com.sun.codemodel.JMod;
 import com.sun.codemodel.writer.SingleStreamCodeWriter;
 import lombok.SneakyThrows;
@@ -9,9 +11,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 
 public class TestClassBuilder {
     private final JCodeModel codeModel;
@@ -27,10 +31,18 @@ public class TestClassBuilder {
         mock.annotate(Mock.class);
     }
 
-    public void addTestMethod(String name) {
+    public void addTestMethod(String name, List<MockCall> statements) {
         var testMethod = definedClass.method(JMod.NONE, codeModel.VOID, name);
         testMethod.annotate(codeModel.ref(Test.class));
         testMethod._throws(Exception.class);
+        var body = testMethod.body();
+
+        statements.forEach(mockCall -> {
+            var arg = codeModel.ref(Mockito.class)
+                    .staticInvoke("mock").arg(JExpr.ref(mockCall.getMockName()).invoke(mockCall.getMethod()))
+                    .invoke("thenReturn").arg("some value to return");
+            body.add(arg);
+        });
     }
 
     public void addTesteeField(Class<?> testeeClass, String testeeFieldName) {

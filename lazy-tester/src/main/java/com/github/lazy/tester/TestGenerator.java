@@ -1,5 +1,7 @@
-package com.company;
+package com.github.lazy.tester;
 
+import com.github.lazy.tester.model.MockCall;
+import com.github.lazy.tester.model.TestMethod;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,12 +32,18 @@ public class TestGenerator {
     }
 
     private void generateTestMethods() {
-        classParser.getDeclaredPublicMethods()
+        classParser.getDeclaredPublicMethods().stream()
+                .map(classParser::convertToTestMethod)
                 .forEach(this::generateTestMethod);
     }
 
-    private void generateTestMethod(String methodName) {
-        testClassBuilder.addTestMethod("should" + StringUtils.capitalize(methodName));
+    private void generateTestMethod(TestMethod method) {
+        var mockCalls = method.getMockCalls();
+        testClassBuilder.addTestMethod("should" + StringUtils.capitalize(method.getName()), mockCalls);
+    }
+
+    private String convertToPlainStatement(MockCall mockCall) {
+        return mockCall.getMockName() + "." + mockCall.getMethod() + "()";
     }
 
     private void generateTesteeField() {

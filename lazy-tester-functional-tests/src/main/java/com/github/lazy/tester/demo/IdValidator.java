@@ -1,4 +1,4 @@
-package com.company.demo;
+package com.github.lazy.tester.demo;
 
 public class IdValidator {
 
