@@ -1,11 +1,7 @@
 package com.github.lazy.tester;
 
 import com.github.lazy.tester.model.MockCall;
-import com.sun.codemodel.JCodeModel;
-import com.sun.codemodel.JDefinedClass;
-import com.sun.codemodel.JExpr;
-import com.sun.codemodel.JMod;
-import com.sun.codemodel.writer.SingleStreamCodeWriter;
+import com.sun.codemodel.*;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +11,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.List;
 
 public class TestClassBuilder {
@@ -66,7 +63,17 @@ public class TestClassBuilder {
     @SneakyThrows
     private String convertToString() {
         try (var os = new ByteArrayOutputStream()) {
-            codeModel.build(new SingleStreamCodeWriter(os));
+            CodeWriter codeWriter = new CodeWriter() {
+                @Override
+                public OutputStream openBinary(JPackage jPackage, String name) {
+                    return os;
+                }
+
+                @Override
+                public void close() {
+                }
+            };
+            codeModel.build(codeWriter);
             return os.toString();
         }
     }
