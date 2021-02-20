@@ -47,7 +47,6 @@ public class ClassParser {
             return Stream.of(methodCallExpr);
         }
         return getAllMethodCallExpressions(methodCallExpr.getName().getId()).stream()
-                .filter(nestedMethod -> nestedMethod.getScope().isPresent())
                 .flatMap(this::getNestedMethodCalls);
     }
 

@@ -17,6 +17,11 @@ public class BestEverService {
 
     private void validate(int number) {
         idValidator.validate(number);
+        validateOtherPrivate(number);
+    }
+
+    private void validateOtherPrivate(int number) {
+        idValidator.validateTwo(number);
     }
 
     private int generateHashNumber(String email) {
