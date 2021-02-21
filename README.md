@@ -71,10 +71,12 @@ class BestEverServiceTest {
     {
         //when
         Mockito.mock(contactService.getEmail()).thenReturn("some value to return");
-        Mockito.mock(idValidator.validate()).thenReturn("some value to return");
         Mockito.mock(idValidator.beautify()).thenReturn("some value to return");
         //then
         bestEverService.getBestNumber();
+        //verify
+        Mockito.verify(idValidator).validate();
+        Mockito.verify(idValidator).validateTwo();
     }
 
 }

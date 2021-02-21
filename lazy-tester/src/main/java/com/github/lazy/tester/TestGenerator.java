@@ -1,10 +1,9 @@
 package com.github.lazy.tester;
 
+import com.github.lazy.tester.builder.TestClassBuilder;
 import com.github.lazy.tester.model.TestMethod;
+import com.github.lazy.tester.parser.ClassParser;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
-
-import java.lang.reflect.Field;
 
 public class TestGenerator {
 
@@ -53,8 +52,7 @@ public class TestGenerator {
     }
 
     private void generateMockFields() {
-        for (Field field : testeeClass.getDeclaredFields()) {
-            testClassBuilder.addMockField(field.getType(), StringUtils.uncapitalize(field.getType().getSimpleName()));
-        }
+        classParser.getDeclaredFields().forEach(field ->
+                testClassBuilder.addMockField(field.getType()));
     }
 }

@@ -1,4 +1,4 @@
-package com.github.lazy.tester;
+package com.github.lazy.tester.builder;
 
 import com.github.lazy.tester.model.MethodCall;
 import com.github.lazy.tester.model.TestMethod;
@@ -13,7 +13,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,8 +29,8 @@ public class TestClassBuilder {
         definedClass = buildDefinedClass(testeeClass.getSimpleName(), testeeClass.getPackageName());
     }
 
-    public void addMockField(Class<?> mockClass, String fieldName) {
-        var mock = definedClass.field(JMod.NONE, codeModel.ref(mockClass), fieldName);
+    public void addMockField(Class<?> mockClass) {
+        var mock = definedClass.field(JMod.NONE, codeModel.ref(mockClass), StringUtils.uncapitalize(mockClass.getSimpleName()));
         mock.annotate(Mock.class);
     }
 
@@ -106,17 +105,7 @@ public class TestClassBuilder {
     @SneakyThrows
     private String convertToString() {
         try (var os = new ByteArrayOutputStream()) {
-            CodeWriter codeWriter = new CodeWriter() {
-                @Override
-                public OutputStream openBinary(JPackage jPackage, String name) {
-                    return os;
-                }
-
-                @Override
-                public void close() {
-                }
-            };
-            codeModel.build(codeWriter);
+            codeModel.build(new StringCodeWriter(os));
             return os.toString();
         }
     }
