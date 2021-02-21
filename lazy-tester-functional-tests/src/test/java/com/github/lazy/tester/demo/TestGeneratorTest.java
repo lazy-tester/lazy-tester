@@ -3,6 +3,7 @@ package com.github.lazy.tester.demo;
 import com.github.javaparser.JavaParser;
 import com.github.lazy.tester.TestGenerator;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
@@ -24,7 +25,7 @@ class TestGeneratorTest {
         var javaParser = new JavaParser();
         var actualClass = javaParser.parse(generatedTestClass);
         var expectedClass = javaParser.parse(readFile(fileName));
-        assertThat(actualClass.getResult()).isEqualTo(expectedClass.getResult());
+        Assertions.assertEquals(1, 3);
     }
 
     @SneakyThrows
