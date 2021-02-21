@@ -1,14 +1,18 @@
 package com.github.lazy.tester;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPublicModifier;
+import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.utils.CodeGenerationUtils;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.lazy.tester.model.MethodCall;
+import com.github.lazy.tester.model.Type;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,10 +57,28 @@ public class ClassParser {
     private MethodCall convertToMockCall(MethodCallExpr methodCallExpr) {
         var callerName = methodCallExpr.getScope().get().asNameExpr().getName().getId();
         var methodName = methodCallExpr.getName().getId();
+        var returnType = getReturnVariableType(methodCallExpr);
         return MethodCall.builder()
                 .mockName(callerName)
                 .method(methodName)
+                .returnType(returnType)
                 .build();
+    }
+
+    private Type getReturnVariableType(MethodCallExpr methodCallExpr) {
+        return methodCallExpr.getParentNode()
+                .map(this::convertNodeToReturnType)
+                .orElse(null);
+    }
+
+    private Type convertNodeToReturnType(Node node) {
+        if (node instanceof VariableDeclarator) {
+            var variableDeclarator = (VariableDeclarator) node;
+            return Type.of(variableDeclarator.getName().getId(), variableDeclarator.getType().asString());
+        } else if (node instanceof ReturnStmt) {
+            return Type.of("undefined", "undefined");
+        }
+        return null;
     }
 
     private boolean isCallerDeclaredField(MethodCallExpr methodCallExpr) {

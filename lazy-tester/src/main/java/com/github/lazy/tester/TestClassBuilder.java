@@ -1,5 +1,6 @@
 package com.github.lazy.tester;
 
+import com.github.lazy.tester.model.MethodCall;
 import com.github.lazy.tester.model.TestMethod;
 import com.sun.codemodel.*;
 import lombok.SneakyThrows;
@@ -13,6 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.Objects;
+
+import static java.util.stream.Collectors.toList;
 
 public class TestClassBuilder {
     private final JCodeModel codeModel;
@@ -37,20 +42,47 @@ public class TestClassBuilder {
         method._throws(Exception.class);
         var body = method.body();
 
-
-        var methodCalls = testMethod.getMethodCalls();
-        if (!methodCalls.isEmpty()) {
-            body.directStatement("//when");
-        }
-        methodCalls.forEach(mockCall -> {
-            var arg = codeModel.ref(Mockito.class)
-                    .staticInvoke("mock").arg(JExpr.ref(mockCall.getMockName()).invoke(mockCall.getMethod()))
-                    .invoke("thenReturn").arg("some value to return");
-            body.add(arg);
-        });
+        var typedMethodCalls = testMethod.getMethodCalls().stream()
+                .filter(methodCall -> Objects.nonNull(methodCall.getReturnType()))
+                .collect(toList());
+        addTypedMethodMocks(body, typedMethodCalls);
 
         body.directStatement("//then");
         body.add(testee.invoke(testMethod.getName()));
+
+        var voidMethodCalls = testMethod.getMethodCalls().stream()
+                .filter(methodCall -> Objects.isNull(methodCall.getReturnType()))
+                .collect(toList());
+        addVoidMethodVerifies(body, voidMethodCalls);
+    }
+
+    private void addTypedMethodMocks(JBlock body, java.util.List<com.github.lazy.tester.model.MethodCall> typedMethodCalls) {
+        if (typedMethodCalls.isEmpty()) {
+            return;
+        }
+        body.directStatement("//when");
+        typedMethodCalls.forEach(mockCall -> addTypedMethodMock(body, mockCall));
+    }
+
+    private void addVoidMethodVerifies(JBlock body, List<MethodCall> voidMethodCalls) {
+        if (voidMethodCalls.isEmpty()) {
+            return;
+        }
+        body.directStatement("//verify");
+        voidMethodCalls.forEach(mockCall -> addVoidMethodVerify(body, mockCall));
+    }
+
+    private void addVoidMethodVerify(JBlock body, MethodCall mockCall) {
+        var arg = codeModel.ref(Mockito.class)
+                .staticInvoke("verify").arg(JExpr.ref(mockCall.getMockName())).invoke(mockCall.getMethod());
+        body.add(arg);
+    }
+
+    private void addTypedMethodMock(JBlock body, MethodCall mockCall) {
+        var arg = codeModel.ref(Mockito.class)
+                .staticInvoke("mock").arg(JExpr.ref(mockCall.getMockName()).invoke(mockCall.getMethod()))
+                .invoke("thenReturn").arg("some value to return");
+        body.add(arg);
     }
 
     public void addTesteeField(Class<?> testeeClass) {

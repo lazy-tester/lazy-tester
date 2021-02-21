@@ -8,4 +8,5 @@ import lombok.Value;
 public class MethodCall {
     String mockName;
     String method;
+    Type returnType;
 }
