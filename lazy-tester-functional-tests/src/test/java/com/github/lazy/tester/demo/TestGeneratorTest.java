@@ -24,7 +24,8 @@ class TestGeneratorTest {
         var javaParser = new JavaParser();
         var actualClass = javaParser.parse(generatedTestClass);
         var expectedClass = javaParser.parse(readFile(fileName));
-        assertThat(actualClass.getResult()).isEqualTo(expectedClass.getResult());
+        throw new IllegalArgumentException();
+//        assertThat(actualClass.getResult()).isEqualTo(expectedClass.getResult());
     }
 
     @SneakyThrows
