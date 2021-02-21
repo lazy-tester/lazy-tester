@@ -31,16 +31,8 @@ public class TestGenerator {
 
     private void generateTestMethods() {
         classParser.getDeclaredPublicMethods().stream()
-                .map(this::generateMethod)
+                .map(classParser::extractTestMethod)
                 .forEach(this::generateTestMethod);
-    }
-
-    public TestMethod generateMethod(String methodName) {
-        var mockCalls = classParser.getMockCalls(methodName);
-        return TestMethod.builder()
-                .methodCalls(mockCalls)
-                .name(methodName)
-                .build();
     }
 
     private void generateTestMethod(TestMethod method) {

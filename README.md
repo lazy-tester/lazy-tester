@@ -40,6 +40,7 @@ public class BestEverService {
 ```java
 package com.github.lazy.tester.demo;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -52,32 +53,31 @@ class BestEverServiceTest {
 
     @Mock
     IdValidator idValidator;
+
     @Mock
     ContactService contactService;
+
     @InjectMocks
     BestEverService bestEverService;
 
     @Test
-    void shouldJustDoIt()
-            throws Exception
-    {
-        //then
+    void shouldJustDoIt() throws Exception {
+        // then
         bestEverService.justDoIt();
     }
 
     @Test
-    void shouldGetBestNumber()
-            throws Exception
-    {
-        //when
+    void shouldGetBestNumber() throws Exception {
+        // when
         Mockito.mock(contactService.getEmail()).thenReturn("some value to return");
         Mockito.mock(idValidator.beautify()).thenReturn("some value to return");
-        //then
-        bestEverService.getBestNumber();
-        //verify
+        // then
+        Integer result = bestEverService.getBestNumber();
+        // assert
+        Assertions.assertEquals("some expected value", result);
+        // verify
         Mockito.verify(idValidator).validate();
         Mockito.verify(idValidator).validateTwo();
     }
-
 }
 ```

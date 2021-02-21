@@ -1,10 +1,12 @@
 package com.github.lazy.tester.builder;
 
+import com.github.javaparser.JavaParser;
 import com.github.lazy.tester.model.MethodCall;
 import com.github.lazy.tester.model.TestMethod;
 import com.sun.codemodel.*;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,18 +21,20 @@ import java.util.Objects;
 import static java.util.stream.Collectors.toList;
 
 public class TestClassBuilder {
-    private final JCodeModel codeModel;
+
+    private static final JavaParser JAVA_PARSER = new JavaParser();
+
+    private final JCodeModel codeModel = new JCodeModel();
     private final JDefinedClass definedClass;
 
     private JFieldVar testee;
 
     public TestClassBuilder(Class<?> testeeClass) {
-        codeModel = new JCodeModel();
         definedClass = buildDefinedClass(testeeClass.getSimpleName(), testeeClass.getPackageName());
     }
 
     public void addMockField(Class<?> mockClass) {
-        var mock = definedClass.field(JMod.NONE, codeModel.ref(mockClass), StringUtils.uncapitalize(mockClass.getSimpleName()));
+        var mock = definedClass.field(JMod.NONE, codeModel.ref(mockClass), getSimpleVariableName(mockClass));
         mock.annotate(Mock.class);
     }
 
@@ -47,7 +51,15 @@ public class TestClassBuilder {
         addTypedMethodMocks(body, typedMethodCalls);
 
         body.directStatement("//then");
-        body.add(testee.invoke(testMethod.getName()));
+        var testeeMethodInvocation = testee.invoke(testMethod.getName());
+        if (Objects.nonNull(testMethod.getReturnType()) && testMethod.getReturnType() != Void.TYPE) {
+            var type = codeModel._ref(testMethod.getReturnType());
+            var variableName = "result";
+            body.decl(type, variableName, testeeMethodInvocation);
+            addVariableAssert(body, variableName);
+        } else {
+            body.add(testeeMethodInvocation);
+        }
 
         var voidMethodCalls = testMethod.getMethodCalls().stream()
                 .filter(methodCall -> Objects.isNull(methodCall.getReturnType()))
@@ -55,7 +67,20 @@ public class TestClassBuilder {
         addVoidMethodVerifies(body, voidMethodCalls);
     }
 
-    private void addTypedMethodMocks(JBlock body, java.util.List<com.github.lazy.tester.model.MethodCall> typedMethodCalls) {
+    private void addVariableAssert(JBlock body, String variableName) {
+        body.directStatement("//assert");
+        var assertCall = codeModel.ref(Assertions.class)
+                .staticInvoke("assertEquals")
+                .arg("some expected value")
+                .arg(JExpr.ref(variableName));
+        body.add(assertCall);
+    }
+
+    private String getSimpleVariableName(Class<?> returnType) {
+        return StringUtils.uncapitalize(returnType.getSimpleName());
+    }
+
+    private void addTypedMethodMocks(JBlock body, java.util.List<MethodCall> typedMethodCalls) {
         if (typedMethodCalls.isEmpty()) {
             return;
         }
@@ -85,12 +110,14 @@ public class TestClassBuilder {
     }
 
     public void addTesteeField(Class<?> testeeClass) {
-        testee = definedClass.field(JMod.NONE, testeeClass, StringUtils.uncapitalize(testeeClass.getSimpleName()));
+        testee = definedClass.field(JMod.NONE, testeeClass, getSimpleVariableName(testeeClass));
         testee.annotate(InjectMocks.class);
     }
 
     public String build() {
-        return convertToString();
+        var builtClass = convertToString();
+        //beautify
+        return JAVA_PARSER.parse(builtClass).getResult().get().toString();
     }
 
     @SneakyThrows

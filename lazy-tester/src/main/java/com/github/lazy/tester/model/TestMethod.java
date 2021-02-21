@@ -10,4 +10,5 @@ import java.util.List;
 public class TestMethod {
     String name;
     List<MethodCall> methodCalls;
+    Class<?> returnType;
 }

@@ -6,11 +6,15 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPublicModifier;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.lazy.tester.model.MethodCall;
+import com.github.lazy.tester.model.TestMethod;
 import com.github.lazy.tester.model.Type;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -88,4 +92,18 @@ public class ClassParser {
         return Arrays.asList(testeeClass.getDeclaredFields());
     }
 
+    public TestMethod extractTestMethod(String methodName) {
+        var mockCalls = getMockCalls(methodName);
+        var returnType= Arrays.stream(testeeClass.getDeclaredMethods())
+                .filter(method -> Modifier.isPublic(method.getModifiers()))
+                .filter(method -> Objects.equals(methodName, method.getName()))
+                .map(Method::getReturnType)
+                .findFirst()
+                .orElse(null);
+        return TestMethod.builder()
+                .methodCalls(mockCalls)
+                .name(methodName)
+                .returnType(returnType)
+                .build();
+    }
 }
