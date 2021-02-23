@@ -14,15 +14,20 @@ public class BestEverService {
     private final IdValidator idValidator;
     private final ContactService contactService;
 
-    public Integer getBestNumber() {
+    public Integer getBestNumber(String stringParameter, int intParameter) {
         var email = contactService.getEmail();
         var number = generateHashNumber(email);
-        validate(number);
+        validate(number + (stringParameter + intParameter).hashCode());
         return idValidator.beautify(number);
     }
 
     private void validate(int number) {
         idValidator.validate(number);
+        validateOtherPrivate(number);
+    }
+
+    private void validateOtherPrivate(int number) {
+        idValidator.validateTwo(number);
     }
 
     private int generateHashNumber(String email) {
@@ -68,13 +73,16 @@ class BestEverServiceTest {
 
     @Test
     void shouldGetBestNumber() throws Exception {
+        // given
+        String stringParameter = new String();
+        int intParameter = -1188957731;
         // when
         Mockito.mock(contactService.getEmail()).thenReturn("some value to return");
         Mockito.mock(idValidator.beautify()).thenReturn("some value to return");
         // then
-        Integer result = bestEverService.getBestNumber();
+        Integer result = bestEverService.getBestNumber(stringParameter, intParameter);
         // assert
-        Assertions.assertEquals("some expected value", result);
+        Assertions.assertEquals(expectedResult, result);
         // verify
         Mockito.verify(idValidator).validate();
         Mockito.verify(idValidator).validateTwo();
