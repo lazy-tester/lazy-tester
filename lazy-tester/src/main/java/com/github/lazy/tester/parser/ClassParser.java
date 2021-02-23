@@ -6,15 +6,14 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.nodeTypes.modifiers.NodeWithPublicModifier;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.lazy.tester.model.MethodCall;
+import com.github.lazy.tester.model.MethodParameter;
 import com.github.lazy.tester.model.TestMethod;
 import com.github.lazy.tester.model.Type;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -94,16 +93,38 @@ public class ClassParser {
 
     public TestMethod extractTestMethod(String methodName) {
         var mockCalls = getMockCalls(methodName);
-        var returnType= Arrays.stream(testeeClass.getDeclaredMethods())
-                .filter(method -> Modifier.isPublic(method.getModifiers()))
-                .filter(method -> Objects.equals(methodName, method.getName()))
-                .map(Method::getReturnType)
-                .findFirst()
-                .orElse(null);
+        var returnType = getMethodReturnType(methodName);
+        var parameters = getMethodParameters(methodName);
+
         return TestMethod.builder()
                 .methodCalls(mockCalls)
                 .name(methodName)
                 .returnType(returnType)
+                .parameters(parameters)
                 .build();
+    }
+
+    private List<MethodParameter> getMethodParameters(String methodName) {
+        var parameters = getReflectionMethod(methodName).get().getParameters();
+        var methodParameters = new ArrayList<MethodParameter>();
+        for (int i = 0; i < parameters.length; i++) {
+            var parameterName = compilationUnit.getDeclaredMethod(methodName).getParameter(i).getName().getId();
+            var methodParameter = MethodParameter.of(parameters[i].getType(), parameterName);
+            methodParameters.add(methodParameter);
+        }
+        return methodParameters;
+    }
+
+    private Class<?> getMethodReturnType(String methodName) {
+        return getReflectionMethod(methodName)
+                .map(Method::getReturnType)
+                .orElse(null);
+    }
+
+    private Optional<Method> getReflectionMethod(String methodName) {
+        return Arrays.stream(testeeClass.getDeclaredMethods())
+                .filter(method -> Modifier.isPublic(method.getModifiers()))
+                .filter(method -> Objects.equals(methodName, method.getName()))
+                .findFirst();
     }
 }

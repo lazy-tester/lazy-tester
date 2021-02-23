@@ -6,6 +6,8 @@ import com.github.lazy.tester.model.TestMethod;
 import com.sun.codemodel.*;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.jeasy.random.EasyRandom;
+import org.jeasy.random.EasyRandomParameters;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,14 +25,17 @@ import static java.util.stream.Collectors.toList;
 public class TestClassBuilder {
 
     private static final JavaParser JAVA_PARSER = new JavaParser();
+    private static final String EXPECTED_RESULT_VARIABLE_NAME = "expectedResult";
 
     private final JCodeModel codeModel = new JCodeModel();
     private final JDefinedClass definedClass;
+    private final EasyRandom generator;
 
     private JFieldVar testee;
 
     public TestClassBuilder(Class<?> testeeClass) {
         definedClass = buildDefinedClass(testeeClass.getSimpleName(), testeeClass.getPackageName());
+        generator = createRandomDataGenerator();
     }
 
     public void addMockField(Class<?> mockClass) {
@@ -39,20 +44,42 @@ public class TestClassBuilder {
     }
 
     public void addTestMethod(TestMethod testMethod) {
+        var body = createTestMethod(testMethod);
+
+        addGiven(testMethod, body);
+        addWhen(testMethod, body);
+        addThenAndAssert(testMethod, body);
+        addVerify(testMethod, body);
+    }
+
+    private JBlock createTestMethod(TestMethod testMethod) {
         var name = "should" + StringUtils.capitalize(testMethod.getName());
         var method = definedClass.method(JMod.NONE, codeModel.VOID, name);
         method.annotate(codeModel.ref(Test.class));
         method._throws(Exception.class);
-        var body = method.body();
+        return method.body();
+    }
 
+    private void addVerify(TestMethod testMethod, JBlock body) {
+        var voidMethodCalls = testMethod.getMethodCalls().stream()
+                .filter(methodCall -> Objects.isNull(methodCall.getReturnType()))
+                .collect(toList());
+        addVoidMethodVerifies(body, voidMethodCalls);
+    }
+
+    private void addWhen(TestMethod testMethod, JBlock body) {
         var typedMethodCalls = testMethod.getMethodCalls().stream()
                 .filter(methodCall -> Objects.nonNull(methodCall.getReturnType()))
                 .collect(toList());
         addTypedMethodMocks(body, typedMethodCalls);
+    }
 
+    private void addThenAndAssert(TestMethod testMethod, JBlock body) {
         body.directStatement("//then");
         var testeeMethodInvocation = testee.invoke(testMethod.getName());
-        if (Objects.nonNull(testMethod.getReturnType()) && testMethod.getReturnType() != Void.TYPE) {
+        testMethod.getParameters().forEach(parameter ->
+                testeeMethodInvocation.arg(JExpr.ref(parameter.getVariableName())));
+        if (isReturnTypeVoid(testMethod)) {
             var type = codeModel._ref(testMethod.getReturnType());
             var variableName = "result";
             body.decl(type, variableName, testeeMethodInvocation);
@@ -60,18 +87,41 @@ public class TestClassBuilder {
         } else {
             body.add(testeeMethodInvocation);
         }
+    }
 
-        var voidMethodCalls = testMethod.getMethodCalls().stream()
-                .filter(methodCall -> Objects.isNull(methodCall.getReturnType()))
-                .collect(toList());
-        addVoidMethodVerifies(body, voidMethodCalls);
+    private boolean isReturnTypeVoid(TestMethod testMethod) {
+        return Objects.nonNull(testMethod.getReturnType()) && testMethod.getReturnType() != Void.TYPE;
+    }
+
+    private void addGiven(TestMethod testMethod, JBlock body) {
+        if (testMethod.getParameters().isEmpty()) {
+            return;
+        }
+        body.directStatement("//given");
+        testMethod.getParameters().forEach(methodParameter -> {
+            addVariableDeclaration(body, methodParameter.getVariableName(), methodParameter.getType());
+        });
+
+        if (!isReturnTypeVoid(testMethod)) {
+            addVariableDeclaration(body, EXPECTED_RESULT_VARIABLE_NAME, testMethod.getReturnType());
+        }
+    }
+
+    private void addVariableDeclaration(JBlock body, String variableName, Class<?> parameterType) {
+        var type = codeModel._ref(parameterType);
+        if (type.isPrimitive()) {
+            var value = generator.nextObject(parameterType);
+            body.decl(type, variableName, JExpr.ref(value.toString()));
+        } else {
+            body.decl(type, variableName, JExpr._new(type));
+        }
     }
 
     private void addVariableAssert(JBlock body, String variableName) {
         body.directStatement("//assert");
         var assertCall = codeModel.ref(Assertions.class)
                 .staticInvoke("assertEquals")
-                .arg("some expected value")
+                .arg(JExpr.ref(EXPECTED_RESULT_VARIABLE_NAME))
                 .arg(JExpr.ref(variableName));
         body.add(assertCall);
     }
@@ -135,5 +185,12 @@ public class TestClassBuilder {
             codeModel.build(new StringCodeWriter(os));
             return os.toString();
         }
+    }
+
+    private EasyRandom createRandomDataGenerator() {
+        final EasyRandom generator;
+        EasyRandomParameters parameters = new EasyRandomParameters();
+        generator = new EasyRandom(parameters);
+        return generator;
     }
 }

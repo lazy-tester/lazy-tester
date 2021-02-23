@@ -46,6 +46,10 @@ public class CompilationUnitWrapper {
         return declaredClassFields;
     }
 
+    public MethodDeclaration getDeclaredMethod(String methodName) {
+        return getDeclaredMethods().get(methodName);
+    }
+
     public Map<String, MethodDeclaration> getDeclaredMethods() {
         if (declaredMethods == null) {
             declaredMethods = extractMethods();

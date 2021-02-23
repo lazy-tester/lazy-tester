@@ -8,10 +8,10 @@ public class BestEverService {
     private final IdValidator idValidator;
     private final ContactService contactService;
 
-    public Integer getBestNumber() {
+    public Integer getBestNumber(String stringParameter, int intParameter) {
         var email = contactService.getEmail();
         var number = generateHashNumber(email);
-        validate(number);
+        validate(number + (stringParameter + intParameter).hashCode());
         return idValidator.beautify(number);
     }
 
